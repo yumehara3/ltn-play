@@ -1,0 +1,126 @@
+/// @ 0.16.0
+
+var gameCount = 0
+var winCount = 0
+var loseCount = 0
+var drawCount = 0
+
+// emilies
+var enemies = []
+
+let limit = 10
+
+@show() {
+  let countObj = Obj:kvs(enemies.reduce(@(acm,item) {
+    if (acm[item] == null) acm[item] = 1
+    else acm[item] += 1
+    acm
+  },{})
+  ).map(
+    @(e) {{ username: e[0], count: e[1]}}
+  ).sort(
+    @(a,b) { b.count - a.count }
+  )
+
+  let topEnemies = []
+  for let i, countObj.len {
+    topEnemies.push(countObj[i])
+    let next = countObj[i + 1]
+    if (next == null || next.count < countObj[i].count) {
+      break
+    }
+  }
+  let topEnemiesText = topEnemies.map(@(e) {`{e.username}`}).join(", ")
+
+  let a = 10000
+  let rate = (Math:ceil((winCount / (winCount + loseCount)) * a) / a) * 100
+  let text = {
+    a: `@{USER_USERNAME} のリバーシ成績{Str:lf}対局数: {gameCount}{Str:lf}勝ち: {winCount}{Str:lf}負け: {loseCount}{Str:lf}ドロー: {drawCount}{Str:lf}勝率: {rate}%{Str:lf}最も対戦した相手: {topEnemiesText}`
+    b: `#リバーシ成績{Str:lf}https://live-theater.net/play/9pw64f1vkj`
+  }
+  Ui:render([
+    Ui:C:container({
+      children: [
+        Ui:C:mfm({ text: text.a })
+      Ui:C:postFormButton({
+        text: "投稿する"
+        form: {
+          text: `{text.a}{Str:lf}{text.b}`
+        }
+      })
+      ]
+    })
+  ])
+}
+
+@calc() {
+  Ui:render([
+    Ui:C:container({
+      children: [
+        Ui:C:mfm({ text: "$[rainbow $[fg.color=f0f 計算中]]"})
+      ]
+    })
+  ])
+  let payload = {
+    limit: limit
+    my: true
+  }
+  let token = Mk:load("reversi_calc_token")
+
+  loop {
+    let res = Mk:api("reversi/games" payload token)
+    if (res == null) return show()
+    if (res.len == 0) return show()
+
+    each(let e, res) {
+      if (e.noIrregularRules && e.isEnded) {
+        gameCount += 1
+        let user1 = e.user1.username
+        let user2 = e.user2.username
+        if (user1 != USER_USERNAME) {
+          enemies.push(user1)
+        } else {
+          enemies.push(user2)
+        }
+
+        if (e.winnerId == USER_ID) {
+          winCount += 1
+        } else if (e.winnerId == null) {
+          drawCount += 1
+        } else {
+          loseCount += 1
+        }
+      }
+    }
+
+    payload.untilId = res[res.len - 1].id
+  }
+}
+
+@run() {
+  var token = ""
+  let savedToken = Mk:load("reversi_calc_token")
+  if (savedToken != null) {
+    token = savedToken
+  }
+  Ui:render([
+    Ui:C:mfm({ text: `"設定 -> API -> アクセストークンの発行" からトークンを発行してください。{Str:lf}権限は必要ありません。`})
+    Ui:C:textInput({
+      label: "アクセストークン"
+      default: token
+      onInput: @(text){ token = text }
+    })
+    Ui:C:button({
+      text: "スタート"
+      primary: true
+      onClick: @() {
+        if (token != "") {
+          Mk:save("reversi_calc_token" token)
+          calc()
+        }
+      }
+    })
+  ])
+}
+
+run()
