@@ -78,10 +78,7 @@ let limit = 10
       ]
     })
   ])
-  let payload = {
-    limit: limit
-    my: true
-  }
+  let payload = { limit: limit, my: true }
   let token = Mk:load("reversi_calc_token")
 
   loop {
@@ -113,7 +110,7 @@ let limit = 10
     each_res(res)
 
     let lastId = res[res.len - 1].id
-    if (lastId == sinceId) return show_without_token(mObj)
+    if (lastId == sinceId) return show()
     sinceId = lastId
   }
 }
