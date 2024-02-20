@@ -1,0 +1,47 @@
+var quantity = 0
+var alcohol = 0
+
+@calc() {
+    let a = alcohol / 100
+
+    let x = quantity * a * 0.8
+    render(Math:floor(x * 10) / 10)
+}
+
+@render(result) {
+    Ui:render([
+        Ui:C:container({
+            children: [
+                Ui:C:numberInput({
+                    onInput: @(number){ alcohol = number }
+                    default: alcohol
+                    label: "アルコール度数 (%)"
+                    caption: ""
+                })
+                Ui:C:numberInput({
+                    onInput: @(number){ quantity = number }
+                    default: quantity
+                    label: "量 (ml)"
+                    caption: ""
+                })
+                Ui:C:button({
+                    text: "計算"
+                    onClick: calc
+                })
+                Ui:C:text({
+                    text: `純アルコール量: {result} g`
+                })
+                Ui:C:postFormButton({
+                    text: "POST"
+                    form: {
+                        text: `{alcohol}度 のお酒 {quantity} ml の純アルコール量は {result} g
+#純アルコール量計算機
+https://live-theater.net/play/9iqn7j6219
+節度のある飲酒量の目安は20 g/日とされています。`
+                    }
+                })]
+        })
+    ])
+}
+
+calc()
