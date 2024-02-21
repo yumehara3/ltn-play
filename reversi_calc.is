@@ -7,6 +7,7 @@ var drawCount = 0
 
 // emilies
 var enemies = []
+var lEnemies = []
 
 let limit = 10
 
@@ -32,10 +33,40 @@ let limit = 10
   }
   let topEnemiesText = topEnemies.map(@(e) {`{e.username}`}).join(", ")
 
+  let lossObj = Obj:kvs(lEnemies.reduce(@(acm,item) {
+    if (acm[item] == null) acm[item] = 1
+    else acm[item] += 1
+    acm
+  },{})
+  ).map(
+    @(e) {{ username: e[0], count: e[1]}}
+  ).sort(
+    @(a,b) { b.count - a.count }
+  )
+  let topLoss = []
+  for let i, lossObj.len {
+    topLoss.push(lossObj[i])
+    let next = lossObj[i + 1]
+    if (next == null || next.count < lossObj[i].count) {
+      break
+    }
+  }
+
+  let topLossData = if topLoss.len > 0 {
+    topLoss.map(@(e) {`{e.username}`}).join(", ")
+  } else {
+    null
+  }
+  let topLossText = if topLossData != null {
+    `最も負けた相手: {topLossData}`
+  } else {
+    ''
+  }
+
   let a = 10000
   let rate = (Math:ceil((winCount / (winCount + loseCount)) * a) / a) * 100
   let text = {
-    a: `@{USER_USERNAME} のリバーシ成績{Str:lf}対局数: {gameCount}{Str:lf}勝ち: {winCount}{Str:lf}負け: {loseCount}{Str:lf}ドロー: {drawCount}{Str:lf}勝率: {rate}%{Str:lf}最も対戦した相手: {topEnemiesText}`
+    a: `@{USER_USERNAME} のリバーシ成績{Str:lf}対局数: {gameCount}{Str:lf}勝ち: {winCount}  /  負け: {loseCount}  /  ドロー: {drawCount}{Str:lf}勝率: {rate}%{Str:lf}最も対戦した相手: {topEnemiesText}{Str:lf}{topLossText}`
     b: `#リバーシ成績{Str:lf}https://live-theater.net/play/9pw64f1vkj`
   }
   Ui:render([
@@ -61,8 +92,14 @@ let limit = 10
     gameCount += 1
     let user1 = e.user1.username
     let user2 = e.user2.username
+
     if (user1 != USER_USERNAME) enemies.push(user1)
     else enemies.push(user2)
+
+    if (e.winnerId != null && e.winnerId != USER_ID) {
+      if (user1 != USER_USERNAME) lEnemies.push(user1)
+      if (user2 != USER_USERNAME) lEnemies.push(user2)
+    }
 
     if (e.winnerId == USER_ID) winCount += 1
     else if (e.winnerId == null) drawCount += 1
